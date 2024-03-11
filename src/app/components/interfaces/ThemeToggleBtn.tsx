@@ -1,33 +1,39 @@
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const ThemeToggleBtn: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false); // Set default value to false
+
+  useEffect(() => {
+    // Check the initial color scheme when the component mounts
+    const initialColorScheme = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
+    setIsDarkMode(initialColorScheme);
+  }, []);
 
   const toggleTheme = () => {
     setIsDarkMode((prevState) => !prevState);
-    if (!isDarkMode) {
-      document.documentElement.style.setProperty('--foreground-rgb', '0, 0, 0');
+    // Update theme based on isDarkMode value
+    if (isDarkMode) {
+      document.documentElement.style.setProperty('--primary-color', '#cce5ff');
       document.documentElement.style.setProperty(
-        '--background-start-rgb',
-        '214, 219, 220'
+        '--secondary-color',
+        '#ffffff'
       );
       document.documentElement.style.setProperty(
-        '--background-end-rgb',
-        '255, 255, 255'
+        '--foreground-color',
+        '#333333'
       );
     } else {
+      document.documentElement.style.setProperty('--primary-color', '#00004c');
       document.documentElement.style.setProperty(
-        '--foreground-rgb',
-        '255, 255, 255'
+        '--secondary-color',
+        '#000021'
       );
       document.documentElement.style.setProperty(
-        '--background-start-rgb',
-        '0, 0, 0'
-      );
-      document.documentElement.style.setProperty(
-        '--background-end-rgb',
-        '0, 0, 0'
+        '--foreground-color',
+        '#ffffff'
       );
     }
   };
@@ -43,9 +49,9 @@ const ThemeToggleBtn: React.FC = () => {
         }`}
       >
         {isDarkMode ? (
-          <Image src="/images/sun.svg" alt="Sun" width={24} height={24} />
+          <Image src="/images/moon.svg" alt="Moon" width={24} height={24} />
         ) : (
-          <Image src="/images/moon.svg" alt="Sun" width={24} height={24} />
+          <Image src="/images/sun.svg" alt="Sun" width={24} height={24} />
         )}
       </span>
     </button>
