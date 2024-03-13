@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Poppins } from 'next/font/google';
 
 import './globals.css';
 import Navbar from './components/layouts/Navbar';
@@ -39,6 +40,12 @@ export const viewport: Viewport = {
   themeColor: '#ffffff',
 };
 
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,7 +53,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className={poppins.className}>
         <Navbar />
         {children}
         <Footer />

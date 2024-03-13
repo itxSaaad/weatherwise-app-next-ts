@@ -2,31 +2,22 @@
 
 import { useEffect, useState } from 'react';
 
-const getLocation = () => {
-  return new Promise<GeolocationPosition>((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by this browser.'));
-    } else {
-      navigator.geolocation.getCurrentPosition(resolve, reject);
-    }
-  });
-};
-
 const Home: React.FC = () => {
-  const [location, setLocation] = useState<GeolocationPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [weatherData, setWeatherData] = useState<any | null>(null);
 
   useEffect(() => {
-    const fetchLocation = async () => {
-      try {
-        const position = await getLocation();
-        setLocation(position);
-      } catch (error: any) {
-        setError(error.message);
+    const fetchWeather = () => {
+      const position = localStorage.getItem('weatherData')
+        ? JSON.parse(localStorage.getItem('weatherData') as string)
+        : '';
+      if (position !== '') {
+        setWeatherData(position);
+      } else {
+        setError('Location not found');
       }
     };
-
-    fetchLocation();
+    fetchWeather();
   }, []);
 
   return (
@@ -40,12 +31,13 @@ const Home: React.FC = () => {
           that allows users to check the current weather and forecast for any
           location.
         </p>
-        {location ? (
+        {weatherData ? (
           <p className="text-lg sm:text-xl text-blue-500 mt-4">
-            Your current latitude is{' '}
-            <span className="font-bold">{location.coords.latitude}</span> and
-            longitude is{' '}
-            <span className="font-bold">{location.coords.longitude}</span>.
+            Current Forecast for your location:{''}
+            <span>
+              {weatherData.location.name}, {weatherData.location.region},{' '}
+              {weatherData.location.country}
+            </span>
           </p>
         ) : error ? (
           <p className="text-lg sm:text-xl mt-4 text-red-600">

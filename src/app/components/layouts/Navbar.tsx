@@ -9,7 +9,7 @@ import ThemeToggleBtn from '../interfaces/ThemeToggleBtn';
 
 const Navbar: FC = () => {
   return (
-    <nav className="w-full fixed flex flex-col sm:flex-row items-center justify-evenly py-4 px-8 text-center border-b border-gray-800">
+    <nav className="w-full h-fit flex flex-col sm:flex-row items-center justify-evenly py-4 px-8 text-center border-b border-gray-800">
       <Link href="/">
         <div className="flex flex-row items-center justify-center sm:justify-start mb-4 sm:mb-0">
           <Image

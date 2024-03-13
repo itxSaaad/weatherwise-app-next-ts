@@ -1,28 +1,32 @@
+import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ChangeEvent, FormEvent, useState } from 'react';
+import axios from 'axios';
 
 function SearchBtn() {
   const [query, setQuery] = useState<string>('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log('Searching for:', query);
+  const API_KEY = process.env.NEXT_PUBLIC_WEATHERAPI_API_KEY;
+
+  const fetchWeather = async (location: string) => {
     try {
-      if (suggestions.length === 0) {
-        setErrorMessage('No cities found. Please Enter any other city!');
-        return;
-      }
-      await fetchWeather(query);
+      const response = await axios.get(
+        `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${location}&days=3&aqi=yes&alerts=yes`
+      );
+      localStorage.setItem('weatherData', JSON.stringify(response.data));
+      console.log('Fetching weather for:', location);
+      console.log('Weather data:', response.data);
+      setQuery('');
+      setSuggestions([]);
+      setErrorMessage('');
     } catch (error: any) {
-      if (error.message === 'City not found') {
-        // Show error message to the user (e.g., using toast notification)
-        setErrorMessage('City not found. Please Enter any other city!');
-        // You can display the error message visually using libraries like React Toastify
+      if (error.response && error.response.status === 404) {
+        setErrorMessage('City not found. Please enter another city.');
       } else {
-        console.error('An unexpected error occurred:', error.message);
+        setErrorMessage(
+          'An unexpected error occurred. Please try again later.'
+        );
       }
     }
   };
@@ -35,20 +39,67 @@ function SearchBtn() {
       (city) => city.toLowerCase().includes(userInput.toLowerCase())
     );
     setSuggestions(newSuggestions);
-    setShowSuggestions(true);
-    setErrorMessage(''); // Reset error message on input change
+    setErrorMessage('');
+  };
+
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (query.trim() === '') {
+      setErrorMessage('Please enter a city name.');
+      return;
+    }
+    fetchWeather(query);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setQuery(suggestion);
-    setShowSuggestions(false);
+    setSuggestions([]);
     fetchWeather(suggestion);
   };
 
-  const fetchWeather = async (location: string) => {
-    // Replace the console log with your API call
-    console.log('Fetching weather for:', location);
-  };
+  useEffect(() => {
+    const getLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const { latitude, longitude } = position.coords;
+          await axios
+            .get(
+              `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${latitude},${longitude}`
+            )
+            .then((response) => {
+              localStorage.setItem(
+                'weatherData',
+                JSON.stringify(response.data)
+              );
+              console.log('Fetching weather for:', response.data.location.name);
+              console.log('Weather data:', response.data);
+            })
+            .catch((error) => {
+              console.error('An error occurred:', error);
+            });
+        });
+      } else {
+        console.log('Geolocation is not supported by this browser.');
+      }
+    };
+
+    getLocation();
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (e.target instanceof Element) {
+        if (!e.target.closest('form')) {
+          setSuggestions([]);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleOutsideClick);
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, []);
 
   return (
     <form
@@ -57,7 +108,7 @@ function SearchBtn() {
     >
       <input
         type="text"
-        placeholder="Enter City, Zip Code, or Country..."
+        placeholder="Enter City Name..."
         value={query}
         onChange={handleChange}
         className={`flex items-center justify-between w-full p-3 bg-gray-50 bg-opacity-40 border border-gray-300 text-gray-900  text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  dark:border-gray-600 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500 backdrop-blur-sm`}
@@ -69,10 +120,8 @@ function SearchBtn() {
       >
         <Image src="/images/search.svg" alt="Search" width={24} height={24} />
       </button>
-      {query && showSuggestions && (
-        <ul
-          className={`absolute top-full left-0 z-10 bg-gray-50 bg-opacity-40 border border-gray-300 rounded-lg mt-1 w-full backdrop-blur-sm dark:bg-gray-700 dark:bg-opacity-40 dark:border-gray-600`}
-        >
+      {query && (
+        <ul className="absolute top-full left-0 z-10 bg-gray-50 bg-opacity-40 border border-gray-300 rounded-lg mt-1 w-full backdrop-blur-sm dark:bg-gray-700 dark:bg-opacity-40 dark:border-gray-600">
           {errorMessage ? (
             <li className="px-4 py-2 text-red-200 dark:text-red-400 bg-white rounded-lg">
               {errorMessage}
