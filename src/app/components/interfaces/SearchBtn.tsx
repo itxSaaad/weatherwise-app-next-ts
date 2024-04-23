@@ -1,35 +1,12 @@
-import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import Image from 'next/image';
 import axios from 'axios';
+import Image from 'next/image';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 
 function SearchBtn() {
   const [query, setQuery] = useState<string>('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const API_KEY = process.env.NEXT_PUBLIC_WEATHERAPI_API_KEY;
-
-  const fetchWeather = async (location: string) => {
-    try {
-      const response = await axios.get(
-        `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${location}&days=3&aqi=yes&alerts=yes`
-      );
-      localStorage.setItem('weatherData', JSON.stringify(response.data));
-      console.log('Fetching weather for:', location);
-      console.log('Weather data:', response.data);
-      setQuery('');
-      setSuggestions([]);
-      setErrorMessage('');
-    } catch (error: any) {
-      if (error.response && error.response.status === 404) {
-        setErrorMessage('City not found. Please enter another city.');
-      } else {
-        setErrorMessage(
-          'An unexpected error occurred. Please try again later.'
-        );
-      }
-    }
-  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const userInput = e.target.value;
@@ -38,8 +15,13 @@ function SearchBtn() {
     const newSuggestions = ['New York', 'Los Angeles', 'Chicago'].filter(
       (city) => city.toLowerCase().includes(userInput.toLowerCase())
     );
+    if (newSuggestions.length === 0) {
+      setErrorMessage('No results found.');
+    } else {
+      setErrorMessage('');
+    }
     setSuggestions(newSuggestions);
-    setErrorMessage('');
+    setShowSuggestions(true);
   };
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -48,49 +30,22 @@ function SearchBtn() {
       setErrorMessage('Please enter a city name.');
       return;
     }
-    fetchWeather(query);
+    localStorage.setItem('location', query);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setQuery(suggestion);
     setSuggestions([]);
-    fetchWeather(suggestion);
+    setShowSuggestions(false);
+    localStorage.setItem('location', suggestion);
   };
-
-  useEffect(() => {
-    const getLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          const { latitude, longitude } = position.coords;
-          await axios
-            .get(
-              `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${latitude},${longitude}`
-            )
-            .then((response) => {
-              localStorage.setItem(
-                'weatherData',
-                JSON.stringify(response.data)
-              );
-              console.log('Fetching weather for:', response.data.location.name);
-              console.log('Weather data:', response.data);
-            })
-            .catch((error) => {
-              console.error('An error occurred:', error);
-            });
-        });
-      } else {
-        console.log('Geolocation is not supported by this browser.');
-      }
-    };
-
-    getLocation();
-  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (e.target instanceof Element) {
         if (!e.target.closest('form')) {
           setSuggestions([]);
+          setShowSuggestions(false);
         }
       }
     };
@@ -120,7 +75,7 @@ function SearchBtn() {
       >
         <Image src="/images/search.svg" alt="Search" width={24} height={24} />
       </button>
-      {query && (
+      {query && showSuggestions && (
         <ul className="absolute top-full left-0 z-10 bg-gray-50 bg-opacity-40 border border-gray-300 rounded-lg mt-1 w-full backdrop-blur-sm dark:bg-gray-700 dark:bg-opacity-40 dark:border-gray-600">
           {errorMessage ? (
             <li className="px-4 py-2 text-red-200 dark:text-red-400 bg-white rounded-lg">

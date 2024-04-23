@@ -1,24 +1,64 @@
 'use client';
 
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 
 const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [weatherData, setWeatherData] = useState<any | null>(null);
 
+  const API_KEY = process.env.NEXT_PUBLIC_WEATHERAPI_API_KEY;
+  // console.log('API_KEY:', API_KEY);
+
   useEffect(() => {
-    const fetchWeather = () => {
-      const position = localStorage.getItem('weatherData')
-        ? JSON.parse(localStorage.getItem('weatherData') as string)
-        : '';
-      if (position !== '') {
-        setWeatherData(position);
-      } else {
-        setError('Location not found');
-      }
-    };
-    fetchWeather();
-  }, []);
+    const location = localStorage.getItem('location');
+    if (location) {
+      axios
+        .get(
+          `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${location}`
+        )
+        .then((response) => {
+          localStorage.setItem('weatherData', JSON.stringify(response.data));
+          setWeatherData(response.data);
+          console.log('Fetching weather for:', response.data.location.name);
+          console.log('Weather data:', response.data);
+        })
+        .catch((error) => {
+          console.error('An error occurred:', error);
+        });
+    } else {
+      const getLocation = () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            await axios
+              .get(
+                `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${latitude},${longitude}`
+              )
+              .then((response) => {
+                localStorage.setItem(
+                  'weatherData',
+                  JSON.stringify(response.data)
+                );
+                setWeatherData(response.data);
+                console.log(
+                  'Fetching weather for:',
+                  response.data.location.name
+                );
+                console.log('Weather data:', response.data);
+              })
+              .catch((error) => {
+                console.error('An error occurred:', error);
+              });
+          });
+        } else {
+          console.log('Geolocation is not supported by this browser.');
+        }
+      };
+
+      getLocation();
+    }
+  }, [API_KEY]);
 
   return (
     <main className="flex flex-col items-center justify-center p-6 sm:p-12 min-h-screen">
